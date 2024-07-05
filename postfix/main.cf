@@ -1,0 +1,4 @@
+# postfix/main.cf
+myhostname = mail.local
+mydestination = $myhostname, localhost.$mydomain, localhost
+home_mailbox = Maildir/

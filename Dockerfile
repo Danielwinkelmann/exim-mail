@@ -1,15 +1,25 @@
-# Use Debian as the base image
-FROM debian:bullseye-slim
+# Dockerfile
+FROM ubuntu:latest
 
-# Install Exim and other necessary packages
-RUN apt-get update && apt-get install -y exim4-daemon-light
+# Install required packages
+RUN apt-get update && \
+    apt-get install -y postfix dovecot-imapd dovecot-pop3d curl cron && \
+    apt-get clean
 
-# Copy Exim configuration files from the Git repository
-COPY exim4.conf /etc/exim4/exim4.conf
-COPY passwd.client /etc/exim4/passwd.client
+# Copy mail processing script
+COPY process_emails.sh /usr/local/bin/process_emails.sh
+RUN chmod +x /usr/local/bin/process_emails.sh
 
-# Expose the SMTP port
-EXPOSE 25
+# Copy cron job directly into cron directory
+COPY cronjob /etc/cron.d/mail-cron
+RUN chmod 0644 /etc/cron.d/mail-cron
 
-# Start Exim
-CMD ["exim", "-bd", "-q30m"]
+# Copy Postfix and Dovecot configurations
+COPY postfix/main.cf /etc/postfix/main.cf
+COPY dovecot/dovecot.conf /etc/dovecot/dovecot.conf
+
+# Expose ports for Postfix and Dovecot
+EXPOSE 25 143 110
+
+# Start services
+CMD service postfix start && service dovecot start && cron -f
